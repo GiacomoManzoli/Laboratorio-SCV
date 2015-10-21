@@ -16,21 +16,23 @@ The man who smokes Chesterfields lives in the house next to the man
 Kools are smoked in the house next to the house where the horse is kept.
 The Lucky Strike smoker drinks orange juice.
 The Japanese smokes Parliaments.
-The Norwegian lives next to the blue house.
+The Norwegian lives next to the blu house.
 
 Who owns a zebra and who drinks water?
 
 Persone: [inglese, spagnolo, ucraino, norvegese, giapponese]
 
-Case: [rossa, verde, gialla, blue, avorio]
+Case: [rossa, verde, gialla, blu, avorio]
 
 Animali: [cane, lumaca, volpe, zebra, cavallo]
 
 Drinks: [acqua, caffe corretto, tea, latte corretto, aranciata]
 
-Sigarette: [Old Gold, Chesterfields, LuckyStrike, Parilaments, Kools]
+Sigarette: [Old Gold, Chesterfields, Lucky Strike, Parilaments, Kools]
 
 """
+
+# LE VARIABILI DA USARE SONO L'INDIRIZZO DELLA CASA! NON LA CASA!
 
 #
 # IMPORT THE OR-TOOLS CONSTRAINT SOLVER
@@ -49,66 +51,138 @@ slv = pywrapcp.Solver('map-coloring')
 # Signature: IntVar(<min>, <max>, <name>)
 #
 
-people = ['inglese', 'spagnolo', 'ucraino', 'norvegese', 'giapponese']
-houses = ['rossa', 'verde', 'gialla', 'blue', 'avorio']
-animals = ['cane', 'lumaca', 'volpe', 'zebra', 'cavallo']
-drinks = ['acqua', 'caffe corretto', 'tea', 'latte corretto', 'aranciata']
-smokes = ['Old Gold', 'Chesterfields', 'LuckyStrike', 'Parilaments', 'Kools']
+houses = {
+    'rossa':0, 
+    'verde':1, 
+    'gialla':2,
+    'blu':3,
+    'avorio':4
+}
 
+people = {
+    'inglese':0,
+    'spagnolo':1,
+    'ucraino':2,
+    'norvegese':3,
+    'giapponese':4
+}
+
+animals = {
+    'cane':0,
+    'lumache':1,
+    'volpe':2,
+    'zebra':3,
+    'cavallo':4
+}
+
+drinks = {
+    'acqua':0,
+    'caffe':1, 
+    'te':2, 
+    'latte':3, 
+    'aranciata':4
+}
+
+smokes = {
+    'Old Gold':0, 
+    'Chesterfields':1, 
+    'Lucky Strike':2, 
+    'Parliaments':3, 
+    'Kools':4
+}
 
 # ogni casa puo' essere di una persona
-house_vars = []
-for house in houses:
-    house_vars.append(slv.IntVar(0, len(houses)-1, house))
 
-animal_vars = []
-for animal in animals:
-    animal_vars.append(slv.IntVar(0, len(animals)-1, animal)) 
+# Variabili
+# person_i = x --> la persona vive nella casa di indirizzo X
+# animal_i = x --> l'animale vive nella casa di indirizzo X
+# ecc.
 
-drink_vars = []
-for drink in drinks:
-    drink_vars.append(slv.IntVar(0, len(drinks)-1, drink))
+addresses = range(5) # l'indirizzo di una casa
 
-smoke_vars = []
-for smoke in smokes:
-    smoke_vars.append(slv.IntVar(0, len(smokes)-1, smoke)) 
+people_vars = [slv.IntVar(addresses, 'n%d' % i) for i in addresses]
+animal_vars = [slv.IntVar(addresses, 'a%d' % i) for i in addresses]
+house_vars = [slv.IntVar(addresses, 'c%d' % i) for i in addresses]
+drink_vars = [slv.IntVar(addresses, 'd%d' % i) for i in addresses]
+smoke_vars = [slv.IntVar(addresses, 's%d' % i) for i in addresses]
+
+
 
 #
 # BUILD CONSTRAINTS AND ADD THEM TO THE MODEL
 # Signature: Add(<constraint>)
 #
 
-# la stessa persona puo' avere una sola casa
+# Vincoli del tipo:
+# la persona i non può essere nella stessa casa della persona j
+# l'animale i non può essere nella stessa casa dell'animale j
+# ...
 
-for (h1, h2) in zip(house_vars,house_vars):
-    if h1 != h2:
-        slv.add(h1 != h2)
+for i in range(0, len(houses)):
+    for j in range(i+1,len(houses)):
+        slv.Add(people_vars[i] != people_vars[j])
+        slv.Add(animal_vars[i] != animal_vars[j])
+        slv.Add(drink_vars[i] != drink_vars[j])
+        slv.Add(smoke_vars[i] != smoke_vars[j])
+        slv.Add(house_vars[i] != house_vars[j])
 
-# la stessa persona puo' avere un solo animale
 
-for (h1, h2) in zip(animal_vars,animal_vars):
-    if h1 != h2:
-        slv.add(h1 != h2)
 
-# la stessa persona puo' avere un solo drink
+# Vincolo l'inglese sta nella casa rossa
+slv.Add(people_vars[people['inglese']] == house_vars[houses['rossa']])
 
-for (h1, h2) in zip(drink_vars,drink_vars):
-    if h1 != h2:
-        slv.add(h1 != h2)
+#people_vars[people['inglese']].SetValues([houses['rossa']])
 
-# la stessa persona puo' avere una sola marca di sigarette
+# Vincolo caffe nella casa vede
+slv.Add(drink_vars[drinks['caffe']] == house_vars[houses['verde']])
 
-for (h1, h2) in zip(smoke_vars,smoke_vars):
-    if h1 != h2:
-        slv.add(h1 != h2)
+# Vincolo spagnolo in casa con il cane
+slv.Add(people_vars[people['spagnolo']] == animal_vars[animals['cane']])
 
-# ------- DO THIS YOURSELVES! -------
+# Vincolo ucraino - te
+slv.Add(people_vars[people['ucraino']] == drink_vars[drinks['te']])
+
+# Vincolo casa verde a destra della casa avorio (indirizzo più grande)
+# Non serve un bound check perché le variabili sono limitate
+slv.Add(house_vars[houses['verde']] == (house_vars[houses['avorio']] + 1)) 
+
+# Vincolo Old Gold - snails
+slv.Add(smoke_vars[smokes['Old Gold']] == animal_vars[animals['lumache']])
+
+# Vincolo Kools - casa gialla
+slv.Add(smoke_vars[smokes['Kools']] == house_vars[houses['gialla']])
+
+# Vincolo Milk - casa di mezzo
+slv.Add(drink_vars[drinks['latte']] == len(house_vars)/2) # Divisione tra interi -> ritorna 2
+
+# Vincolo Norvegese in prima casa
+slv.Add(people_vars[people['norvegese']] == 0)
+
+# Vincolo Chester - Vicino alla casa della volpe
+# Non serve un bound check perché le variabili sono limitate
+slv.Add(abs(smoke_vars[smokes['Chesterfields']] - animal_vars[animals['volpe']]) == 1)
+
+# Vincolo Kools - Vicino alla casa della cavallo
+# Non serve un bound check perché le variabili sono limitate
+slv.Add(abs(smoke_vars[smokes['Kools']] -(animal_vars[animals['cavallo']])) == 1)
+
+# Vincolo aranciata - lucky strikes
+slv.Add(smoke_vars[smokes['Lucky Strike']] == drink_vars[drinks['aranciata']])
+
+# Vincolo Giapponese Parliaments
+slv.Add(people_vars[people['giapponese']] == smoke_vars[smokes['Parliaments']])
+
+# Vincolo Norvegese vicino alla casa blu
+# Cioè l'indirizzo della casa del norvegese è +-1 rispetto a quello della casa blu
+# In teoria può essere semplificato perché il norvegese ha il vincolo che è nella prima casa (un solo vicino)
+
+slv.Add(abs(people_vars[people['norvegese']] - house_vars[houses['blu']])== 1)
 
 
 #
 # THOSE ARE THE VARIABLES THAT WE WANT TO USE FOR BRANCHING
 #
-all_vars = # ------- DO THIS YOURSELVES! -------
+all_vars = people_vars + animal_vars + drink_vars + smoke_vars + house_vars
 
 #
 # DEFINE THE SEARCH STRATEGY
@@ -133,15 +207,18 @@ while slv.NextSolution():
     # and their "Value()" method can be called without errors.
     # The notation %2d prints an integer using always two "spaces"
 
-    # ------- DO THIS YOURSELVES! -------
+    print people_vars
+
+    print 'Water is drinked in house %d' % drink_vars[drinks['acqua']].Value()
+    print 'The zebra is in house %d' % animal_vars[animals['zebra']].Value()
+
 
     # WE WANT A SINGLE SOLUTION
     nsol += 1
-    break
 
 if nsol == 0:
     print 'no solution found'
-
+print nsol
 #
 # END THE SEARCH PROCESS
 #

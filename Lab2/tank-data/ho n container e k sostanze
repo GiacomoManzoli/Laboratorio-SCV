@@ -1,0 +1,34 @@
+ho n container e k sostanze
+
+ogni container deve tenere una sostanza diversa
+
+
+container_i € {sostanza_1, sostanza_2, sostanza_3 } in questo modo ho già il vincolo intrinseco nelle variabili
+
+capacità_container > sostanza
+
+container_sicuro == sostanza_pericolosa || container_sicuro && not(sostanza_pericolosa)
+
+container_sicuro    sostanza_pericolosa
+true                true                -> true
+true                false               -> true
+false               true                -> false
+false               false               -> true
+
+
+La decisione da prendere è in che cointainer metto quale sostanza.
+
+
+###
+
+Se tmax_i < tmin_j o tmax_j < tmin_i le due sostanze non possono essere vicine
+
+(tmax_i < tmin_j or tmax_j < tmin_i) && abs(i-j) != 1
+
+Sostanza_i = Numero del container in cui la metto
+
+Vincoli:
+    Sostanza_i != Sostanza_j
+    Sostanza_i == Container_X && qta(sostanza_i) < capacità(container_x)
+    Sostanza_i == Container_X && container_sicuro == sostanza_pericolosa || container_sicuro && not(sostanza_pericolosa)
+
