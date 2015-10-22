@@ -1,17 +1,8 @@
-#
-# IMPORT THE OR-TOOLS CONSTRAINT SOLVER
-#
+
 from ortools.constraint_solver import pywrapcp
 
-
-#
-# To access system variables
-#
 import sys
 
-#
-# For parsing JSON data
-#
 import json
 
 #
@@ -80,21 +71,53 @@ n = 9
 # Signature: IntVar(<min>, <max>, <name>)
 #
 
-# ===== YOUR STUFF HERE =====
+cells={}
+
+for i in range(0,n):
+    for j in range(0,n):
+        cells[(i,j)] = slv.IntVar(1,n,'Cella %d,%d' %(i,j))
 
 #
 # BUILD CONSTRAINTS AND ADD THEM TO THE MODEL
 # Signature: Add(<constraint>)
 #
 
-# ===== YOUR STUFF HERE =====
+#Vincolo tutti gli elementi di una riga diversi
+
+for i in range(0,n):
+    # i indice di riga
+    for j in range(0,n):
+        for k in range(j+1, n):
+            slv.Add(cells[(i,j)] != cells[(i,k)])
+
+#Vincolo tutti gli elementi di una colonna diversi
+
+for j in range(0,n):
+    # i indice di riga
+    for i in range(0,n):
+        for k in range(i+1, n):
+            slv.Add(cells[(i,j)] != cells[(k,j)])
+
+#Vincolo tutti gli elementi di un quadrato diversi
+
+for box in boxes:
+    for i in range(0, len(box)):
+        for j in range(i+1, len(box)):
+            slv.Add(cells[box[i]] != cells[box[j]])
+
+#Vincoli derivati dagli input fissati
+
+for i in range(len(grid)):
+    for j in range(len(grid[i])):
+        if (grid[i][j] != 0):
+             slv.Add(cells[(i,j)] == grid[i][j])
 
 #
 # THOSE ARE THE VARIABLES THAT WE WANT TO USE FOR BRANCHING
 #
 
 # we need to flatten the dictionary here
-all_vars = # ===== YOUR STUFF HERE =====
+all_vars = cells.values()
 
 #
 # DEFINE THE SEARCH STRATEGY
@@ -119,7 +142,7 @@ slv.NewSearch(decision_builder, search_monitors)
 #
 def print_sol(cell_content):
     for i in range(n):
-        print ' '.join('%d' % cell_content[i,j] for j in range(n))
+        print ' '.join('%d' % cell_content[(i,j)].Value() for j in range(n))
 
 #
 # Search for a solution
@@ -128,11 +151,8 @@ nsol = 0
 while slv.NextSolution():
     print 'SOLUTION FOUND =========================='
 
-    # Obtain the content of each cell in a dictionary
-    cell_content = # ===== YOUR STUFF HERE =====
-
     # print the solution
-    print_sol(cell_content)
+    print_sol(cells)
 
     print 'END OF SOLUTION =========================='
 
