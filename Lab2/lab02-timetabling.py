@@ -1,17 +1,7 @@
-#
-# IMPORT THE OR-TOOLS CONSTRAINT SOLVER
-#
+
 from ortools.constraint_solver import pywrapcp
 
-
-#
-# To access system variables
-#
 import sys
-
-#
-# For parsing JSON data
-#
 import json
 
 #
@@ -41,27 +31,70 @@ lectures = data['lectures']
 nr = len(data['rooms']) # number of rooms
 nl = len(data['lectures']) # number of lectures
 
+
+# Ci sono NR stanze e devo fare NL lezioni
+# Ogni lezione ha un certo numero di partecipanti e per quella data lezione l'aula deve essere sufficentemente grande
+
 #
 # CREATE VARIABLES
 # Signature: IntVar(<min>, <max>, <name>)
 #
 
-# ===== YOUR STUFF HERE =====
+lecture_room_vars = []
+# lecture_room_i = x : la lezione i si tiene nell'aula x.
 
+for i in range(nl):
+    lecture_room_vars.append(slv.IntVar(range(nr), 'Aula Lezione %d'%i))
+
+lecture_turn_vars = []
+# lecture_turn_i = x : la lezione si tiene al turno x
+
+for i in range(nl):
+    lecture_turn_vars.append(slv.IntVar(range(2), 'Turno Lezione %d'%i)) # Massimo 2 turni
 
 #
 # BUILD CONSTRAINTS AND ADD THEM TO THE MODEL
 # Signature: Add(<constraint>)
 #
 
-# ===== YOUR STUFF HERE =====
+# Vincolo sulla capacità 
+for i in range(nl):
+    for j in range(nr):
+        if lectures[i]['num'] > rooms[j]['cap']:
+            slv.Add(lecture_room_vars[i] != j)
+
+# Se due lezioni si tengono sulla stessa aula i turni devono essere diversi
+for i in range(nl):
+    for j in range(nl):
+        if i != j:
+            # -abs(t1 - t2) == 0 se i turni sono uguali, -1 se i turni sono diversi
+            # abs(r1 - r2) == 0 se la stanza è la stessa, >0 altrimenti. 
+            # r1 - r2 > t1 - t2 = True : SE t1 - t2 = 0 Allora r1-r2 > 0 --> a turni uguali la differenza tra le due stanze deve essere >0, non possono esserci due stanze uguali nello stesso turno.
+            #                            SE t1- t2 = -1 allora r1-t2 > -1 --> a turni diversi la differenza tra le stanze deve essere >= 0.
+            #                   = False : Se t1 - t2 = 0 Allora r1-r2 = 0 --> a turni uguali ci sono due stanze uguali, è giusto False
+            #                           : Se t1 - t2 = -1 allora r1-r2 <= -1 ma r1-r2 è sempre maggiore di 0, quindi non può mai verificarsi come situazione
+            slv.Add( abs(lecture_room_vars[i] - lecture_room_vars[j]) > (-1*abs(lecture_turn_vars[i] - lecture_turn_vars[j])) )
+
+# Se la lezione è lunga la lezione deve tenersi al primo turno e l'aula non può più essere usata
+for i in range(nl):
+    if lectures[i]['long']:
+       # La lezione deve essere tenuta al primo turno
+       slv.Add(lecture_turn_vars[i] == 0)
+       for j in range(nl):
+            if i != j:
+                slv.Add(lecture_room_vars[i] != lecture_room_vars[j])
+
+
+
+# Se la lezione è corta l'aula compare al massimo due volte due volte
+
 
 #
 # THOSE ARE THE VARIABLES THAT WE WANT TO USE FOR BRANCHING
 #
 
 # we need to flatten the dictionary here
-all_vars = # ===== YOUR STUFF HERE =====
+all_vars = lecture_room_vars + lecture_turn_vars
 
 #
 # DEFINE THE SEARCH STRATEGY
@@ -103,11 +136,17 @@ while slv.NextSolution():
     print 'SOLUTION FOUND =========================='
 
     # Find the chosen room for each lecture
-    room_for_lecture = # ===== YOUR STUFF HERE =====
+
+    #room_for_lecture =
 
     # print solution
-    print_sol(room_for_lecture)
-
+    #print_sol(room_for_lecture)
+    print '           | Aula | Turno'
+    for i in range(nl):
+        d =''
+        if lectures[i]['long']:
+            d = '(long)'
+        print 'Lezione %d: %d - %d %s' % (i , lecture_room_vars[i].Value() , lecture_turn_vars[i].Value(), d)
 
     print 'END OF SOLUTION =========================='
 

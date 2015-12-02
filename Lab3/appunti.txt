@@ -1,0 +1,47 @@
+
+
+vincoli sono:
+ad ogni istante t devo avere abbastanza risorse per soddisfare i vari ordini
+
+a qualche swap devo perdere un t.
+
+--------------------------------------
+
+xt = che prodotto produco all'istante t
+
+lo swap è del tipo:
+
+(xi = p1) <= (xi+1 != p2)
+
+la quantità del tipo è
+
+s = sum(xi == p), i < t, s >= deadline_t_prod
+
+z = max( i * (xi == idle))
+
+------------------------------------
+
+x i,j = t - Il j-esimo prodotto di tipo i viene prodotto all'istante t.
+
+swap: per ogni coppia X_a,b e X_c,d con a incompatibile con c, la differenza deve essere maggiore di 1. (non serve modellare l'idle).
+
+deadline:
+
+con j incrementale
+
+per ogni ordine aggiungo un vincolo del tipo
+    X_prod,j <= deadline
+
+
+
+
+
+--------------------------------------
+
+start_i = t quando inizia l'intervallo di produzione i
+dur_i = qunato dura l'intervallo i
+prod_i = prod, che prodotto produco nell'intervallo i.
+
+lo swap lo modello con per ogni coppia di valori che richiedono un tempo di swap lo lo start del seconodo intervallo deve essere uguale alla terminazione del primo +1.
+
+C'è da diventare matti per il vincolo nelle deadline
